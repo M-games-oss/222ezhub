@@ -1,4 +1,4 @@
---// 222 Hub - Studio Test Panel (STABLE)
+--// 222 Hub - Studio Test Panel (ULTIMATE FINAL v5)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -28,8 +28,7 @@ Panel.AnchorPoint = Vector2.new(0.5, 0.5)
 Panel.BackgroundColor3 = Color3.fromRGB(20, 90, 50)
 Panel.BorderSizePixel = 0
 Panel.Parent = Gui
-
-Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 18)
+Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 16)
 
 -- Gradient border
 local Stroke = Instance.new("UIStroke")
@@ -45,7 +44,7 @@ Gradient.Parent = Stroke
 
 --// Title Bar (drag handle)
 local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1, 0, 0, 42)
+TitleBar.Size = UDim2.new(1, 0, 0, 32)
 TitleBar.BackgroundTransparency = 1
 TitleBar.Parent = Panel
 
@@ -54,21 +53,20 @@ Title.Size = UDim2.new(1, 0, 1, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "222 Hub"
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
+Title.TextSize = 16
 Title.TextColor3 = Color3.fromRGB(220, 255, 235)
 Title.Parent = TitleBar
 
---// Smooth open animation
+--// Smooth open animation (smaller panel)
 TweenService:Create(
     Panel,
     TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-    {Size = UDim2.fromScale(0.32, 0.5)}
+    {Size = UDim2.fromScale(0.22, 0.38)}
 ):Play()
 
---// Dragging (TITLE ONLY)
+--// Dragging
 do
     local dragging, dragStart, startPos
-
     TitleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -76,7 +74,6 @@ do
             startPos = Panel.Position
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
@@ -86,11 +83,8 @@ do
             )
         end
     end)
-
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
 end
 
@@ -100,13 +94,12 @@ local InfiniteJump = false
 local SpeedEnabled = false
 local SpeedValue = 16
 local OriginalSpeed
-local JumpCooldown = false
 
 --// Button helper
 local function CreateButton(text, y)
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0.9, 0, 0, 36)
-    b.Position = UDim2.new(0.05, 0, 0, y)
+    b.Size = UDim2.new(0.85, 0, 0, 28)
+    b.Position = UDim2.new(0.075, 0, 0, y)
     b.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
     b.TextColor3 = Color3.fromRGB(235, 255, 245)
     b.Font = Enum.Font.Gotham
@@ -118,10 +111,11 @@ local function CreateButton(text, y)
     return b
 end
 
---// Buttons
-local LowGravBtn = CreateButton("Low Gravity [OFF]", 60)
-local JumpBtn = CreateButton("Infinite Jump [OFF]", 110)
-local SpeedBtn = CreateButton("Speed Boost [OFF]", 160)
+--// Feature Buttons
+local LowGravBtn = CreateButton("Low Gravity [OFF]", 40)
+local JumpBtn = CreateButton("Infinite Jump [OFF]", 80)
+local SpeedBtn = CreateButton("Speed Boost [OFF]", 120)
+local ESPBtn = CreateButton("ESP [OFF]", 160)
 
 LowGravBtn.MouseButton1Click:Connect(function()
     LowGravity = not LowGravity
@@ -136,93 +130,248 @@ end)
 SpeedBtn.MouseButton1Click:Connect(function()
     SpeedEnabled = not SpeedEnabled
     SpeedBtn.Text = SpeedEnabled and "Speed Boost [ON]" or "Speed Boost [OFF]"
-
     local _, hum = GetCharacter()
     if not SpeedEnabled and OriginalSpeed then
         hum.WalkSpeed = OriginalSpeed
     end
 end)
 
---// Slider (isolated input)
+--// Slider
 local SliderBack = Instance.new("Frame")
-SliderBack.Size = UDim2.new(0.9, 0, 0, 12)
-SliderBack.Position = UDim2.new(0.05, 0, 0, 215)
+SliderBack.Size = UDim2.new(0.85, 0, 0, 10)
+SliderBack.Position = UDim2.new(0.075, 0, 0, 200) -- moved down for spacing
 SliderBack.BackgroundColor3 = Color3.fromRGB(30, 80, 55)
 SliderBack.Parent = Panel
-Instance.new("UICorner", SliderBack).CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", SliderBack).CornerRadius = UDim.new(1,0)
 
 local SliderFill = Instance.new("Frame")
-SliderFill.Size = UDim2.new(0.5, 0, 1, 0)
-SliderFill.BackgroundColor3 = Color3.fromRGB(90, 255, 150)
+SliderFill.Size = UDim2.new(0.5,0,1,0)
+SliderFill.BackgroundColor3 = Color3.fromRGB(90,255,150)
 SliderFill.Parent = SliderBack
-Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(1,0)
 
 local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(0.9, 0, 0, 22)
-SpeedLabel.Position = UDim2.new(0.05, 0, 0, 235)
+SpeedLabel.Size = UDim2.new(0.85,0,0,18)
+SpeedLabel.Position = UDim2.new(0.075, 0, 0, 215)
 SpeedLabel.BackgroundTransparency = 1
 SpeedLabel.Text = "Speed: 16"
 SpeedLabel.Font = Enum.Font.Gotham
 SpeedLabel.TextSize = 14
-SpeedLabel.TextColor3 = Color3.fromRGB(220, 255, 235)
+SpeedLabel.TextColor3 = Color3.fromRGB(220,255,235)
 SpeedLabel.Parent = Panel
 
 local sliding = false
-
 SliderBack.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then
-        sliding = true
-    end
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true end
 end)
-
 UserInputService.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then
-        sliding = false
-    end
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
 end)
-
 UserInputService.InputChanged:Connect(function(i)
     if sliding and i.UserInputType == Enum.UserInputType.MouseMovement then
-        local rel = math.clamp(
-            (i.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X,
-            0, 1
-        )
+        local rel = math.clamp((i.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
         SpeedValue = math.floor(rel * 30)
-        SliderFill.Size = UDim2.new(rel, 0, 1, 0)
-        SpeedLabel.Text = "Speed: " .. SpeedValue
+        SliderFill.Size = UDim2.new(rel,0,1,0)
+        SpeedLabel.Text = "Speed: "..SpeedValue
     end
 end)
 
---// Infinite Jump (SAFE)
+--// Infinite Jump
 UserInputService.JumpRequest:Connect(function()
     if not InfiniteJump then return end
-
     local char, hum = GetCharacter()
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return end
-
-    -- Only allow mid-air boost
     if hum.FloorMaterial ~= Enum.Material.Air then return end
-
-    -- Reset vertical velocity to avoid stacking physics
-    local vel = root.AssemblyLinearVelocity
-    root.AssemblyLinearVelocity = Vector3.new(vel.X, 0, vel.Z)
-
-    -- Apply controlled upward force (SAFE RANGE)
-    root.AssemblyLinearVelocity += Vector3.new(0, 38, 0)
+    root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X,0,root.AssemblyLinearVelocity.Z)
+    root.AssemblyLinearVelocity += Vector3.new(0,38,0)
 end)
 
---// Runtime loop
+--// Runtime Loop
 RunService.Heartbeat:Connect(function()
     local _, hum = GetCharacter()
-
-    if not OriginalSpeed then
-        OriginalSpeed = hum.WalkSpeed
-    end
-
-    if SpeedEnabled then
-        hum.WalkSpeed = SpeedValue
-    end
-
+    if not OriginalSpeed then OriginalSpeed = hum.WalkSpeed end
+    if SpeedEnabled then hum.WalkSpeed = SpeedValue end
     workspace.Gravity = LowGravity and 120 or 196.2
 end)
+
+--// GUI Toggle System
+local GuiVisible = true
+local GuiToggleKey = Enum.KeyCode.RightShift
+local HideTweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+
+-- Show GUI button outside panel
+local ShowGuiBtn = Instance.new("TextButton")
+ShowGuiBtn.Size = UDim2.new(0,120,0,30)
+ShowGuiBtn.Position = UDim2.new(0.5,-60,0.05,0)
+ShowGuiBtn.AnchorPoint = Vector2.new(0.5,0)
+ShowGuiBtn.BackgroundColor3 = Color3.fromRGB(40,160,90)
+ShowGuiBtn.TextColor3 = Color3.fromRGB(235,255,245)
+ShowGuiBtn.Font = Enum.Font.Gotham
+ShowGuiBtn.TextSize = 14
+ShowGuiBtn.Text = "Show GUI"
+ShowGuiBtn.Visible = false
+ShowGuiBtn.Parent = Gui
+Instance.new("UICorner", ShowGuiBtn).CornerRadius = UDim.new(0,6)
+
+-- Keybind label + input
+local KeybindLabel = Instance.new("TextLabel")
+KeybindLabel.Size = UDim2.new(0.4,0,0,24)
+KeybindLabel.Position = UDim2.new(0.075,0,0,235)
+KeybindLabel.BackgroundTransparency = 1
+KeybindLabel.Text = "GUI Key:"
+KeybindLabel.TextColor3 = Color3.fromRGB(235,255,245)
+KeybindLabel.Font = Enum.Font.Gotham
+KeybindLabel.TextSize = 14
+KeybindLabel.TextXAlignment = Enum.TextXAlignment.Left
+KeybindLabel.Parent = Panel
+
+local KeybindBox = Instance.new("TextBox")
+KeybindBox.Size = UDim2.new(0.5,0,0,24)
+KeybindBox.Position = UDim2.new(0.5,0,0,235)
+KeybindBox.BackgroundColor3 = Color3.fromRGB(40,160,90)
+KeybindBox.TextColor3 = Color3.fromRGB(235,255,245)
+KeybindBox.Font = Enum.Font.Gotham
+KeybindBox.TextSize = 14
+KeybindBox.PlaceholderText = GuiToggleKey.Name
+KeybindBox.Text = ""
+KeybindBox.ClearTextOnFocus = false
+KeybindBox.Parent = Panel
+Instance.new("UICorner", KeybindBox).CornerRadius = UDim.new(0,6)
+
+--// Toggle GUI function
+local HideGuiBtn = CreateButton("Hide GUI", 260)
+local function ToggleGUI()
+    GuiVisible = not GuiVisible
+    ShowGuiBtn.Visible = not GuiVisible
+
+    TweenService:Create(Panel, HideTweenInfo, {Size = GuiVisible and UDim2.fromScale(0.22,0.38) or UDim2.new(0,0,0,0)}):Play()
+
+    -- explicitly hide/show all main elements
+    LowGravBtn.Visible = GuiVisible
+    JumpBtn.Visible = GuiVisible
+    SpeedBtn.Visible = GuiVisible
+    ESPBtn.Visible = GuiVisible
+    SliderBack.Visible = GuiVisible
+    SpeedLabel.Visible = GuiVisible
+    KeybindLabel.Visible = GuiVisible
+    KeybindBox.Visible = GuiVisible
+    Title.Visible = GuiVisible
+    HideGuiBtn.Visible = GuiVisible
+end
+
+HideGuiBtn.MouseButton1Click:Connect(ToggleGUI)
+ShowGuiBtn.MouseButton1Click:Connect(ToggleGUI)
+
+-- Keybind input handling (auto-uppercase)
+KeybindBox.FocusLost:Connect(function()
+    local inputName = KeybindBox.Text
+    if inputName and #inputName > 0 then
+        local enumKey = Enum.KeyCode[inputName:upper()] -- force uppercase
+        if enumKey then
+            GuiToggleKey = enumKey
+            KeybindBox.PlaceholderText = GuiToggleKey.Name
+            KeybindBox.Text = ""
+        else
+            KeybindBox.Text = ""
+            KeybindBox.PlaceholderText = "Invalid Key"
+        end
+    end
+end)
+
+-- Keybind listener
+UserInputService.InputBegan:Connect(function(input,gpe)
+    if gpe then return end
+    if input.KeyCode == GuiToggleKey then
+        ToggleGUI()
+    end
+end)
+
+--// ESP System
+local ESPEnabled = false
+local ESPs = {}
+
+local function CreateESPBox(player)
+    if player == LocalPlayer then return end
+    if ESPs[player] then return end
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+
+    local box = Instance.new("BoxHandleAdornment")
+    box.Adornee = hrp
+    box.Size = Vector3.new(3, hum.HipHeight*2.5, 3)
+    box.Color3 = Color3.fromRGB(255,0,0)
+    box.Transparency = 0.5
+    box.AlwaysOnTop = true
+    box.ZIndex = 10
+    box.Parent = hrp
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Adornee = hrp
+    billboard.AlwaysOnTop = true
+    billboard.Size = UDim2.new(0,100,0,25)
+    billboard.StudsOffset = Vector3.new(0, hum.HipHeight+2,0)
+    billboard.Parent = hrp
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1,0,1,0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255,0,0)
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextScaled = true
+    nameLabel.Parent = billboard
+
+    ESPs[player] = {Box=box,Billboard=billboard}
+end
+
+local function RemoveESPBox(player)
+    local data = ESPs[player]
+    if data then
+        if data.Box then data.Box:Destroy() end
+        if data.Billboard then data.Billboard:Destroy() end
+        ESPs[player] = nil
+    end
+end
+
+local function ToggleESP()
+    ESPEnabled = not ESPEnabled
+    ESPBtn.Text = ESPEnabled and "ESP [ON]" or "ESP [OFF]"
+    if not ESPEnabled then
+        for player,_ in pairs(ESPs) do RemoveESPBox(player) end
+    end
+end
+
+ESPBtn.MouseButton1Click:Connect(ToggleESP)
+
+RunService.Heartbeat:Connect(function()
+    ESPBtn.Text = ESPEnabled and "ESP [ON]" or "ESP [OFF]"
+    if ESPEnabled then
+        for _,player in pairs(Players:GetPlayers()) do
+            local char = player.Character
+            local hum = char and char:FindFirstChild("Humanoid")
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if char and hum and hrp then
+                if not ESPs[player] then
+                    CreateESPBox(player)
+                else
+                    ESPs[player].Box.Size = Vector3.new(3, hum.HipHeight*2.5,3)
+                    ESPs[player].Box.Adornee = hrp
+                    ESPs[player].Billboard.Adornee = hrp
+                    ESPs[player].Billboard.StudsOffset = Vector3.new(0,hum.HipHeight+2,0)
+                end
+            end
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        if ESPEnabled then CreateESPBox(player) end
+    end)
+end)
+
+Players.PlayerRemoving:Connect(RemoveESPBox)
