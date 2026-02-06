@@ -1,0 +1,228 @@
+--// 222 Hub - Studio Test Panel (STABLE)
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+--// Character utils
+local function GetCharacter()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return char, char:WaitForChild("Humanoid")
+end
+
+--// GUI
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "222Hub"
+Gui.ResetOnSpawn = false
+Gui.Parent = PlayerGui
+
+--// Panel
+local Panel = Instance.new("Frame")
+Panel.Size = UDim2.fromScale(0, 0)
+Panel.Position = UDim2.fromScale(0.5, 0.5)
+Panel.AnchorPoint = Vector2.new(0.5, 0.5)
+Panel.BackgroundColor3 = Color3.fromRGB(20, 90, 50)
+Panel.BorderSizePixel = 0
+Panel.Parent = Gui
+
+Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 18)
+
+-- Gradient border
+local Stroke = Instance.new("UIStroke")
+Stroke.Thickness = 2
+Stroke.Parent = Panel
+
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 255, 160)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 160, 90))
+})
+Gradient.Parent = Stroke
+
+--// Title Bar (drag handle)
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 42)
+TitleBar.BackgroundTransparency = 1
+TitleBar.Parent = Panel
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "222 Hub"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.TextColor3 = Color3.fromRGB(220, 255, 235)
+Title.Parent = TitleBar
+
+--// Smooth open animation
+TweenService:Create(
+    Panel,
+    TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+    {Size = UDim2.fromScale(0.32, 0.5)}
+):Play()
+
+--// Dragging (TITLE ONLY)
+do
+    local dragging, dragStart, startPos
+
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = Panel.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            Panel.Position = UDim2.fromScale(
+                startPos.X.Scale + delta.X / workspace.CurrentCamera.ViewportSize.X,
+                startPos.Y.Scale + delta.Y / workspace.CurrentCamera.ViewportSize.Y
+            )
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+--// States
+local LowGravity = false
+local InfiniteJump = false
+local SpeedEnabled = false
+local SpeedValue = 16
+local OriginalSpeed
+local JumpCooldown = false
+
+--// Button helper
+local function CreateButton(text, y)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0.9, 0, 0, 36)
+    b.Position = UDim2.new(0.05, 0, 0, y)
+    b.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+    b.TextColor3 = Color3.fromRGB(235, 255, 245)
+    b.Font = Enum.Font.Gotham
+    b.TextSize = 14
+    b.Text = text
+    b.AutoButtonColor = false
+    b.Parent = Panel
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+    return b
+end
+
+--// Buttons
+local LowGravBtn = CreateButton("Low Gravity [OFF]", 60)
+local JumpBtn = CreateButton("Infinite Jump [OFF]", 110)
+local SpeedBtn = CreateButton("Speed Boost [OFF]", 160)
+
+LowGravBtn.MouseButton1Click:Connect(function()
+    LowGravity = not LowGravity
+    LowGravBtn.Text = LowGravity and "Low Gravity [ON]" or "Low Gravity [OFF]"
+end)
+
+JumpBtn.MouseButton1Click:Connect(function()
+    InfiniteJump = not InfiniteJump
+    JumpBtn.Text = InfiniteJump and "Infinite Jump [ON]" or "Infinite Jump [OFF]"
+end)
+
+SpeedBtn.MouseButton1Click:Connect(function()
+    SpeedEnabled = not SpeedEnabled
+    SpeedBtn.Text = SpeedEnabled and "Speed Boost [ON]" or "Speed Boost [OFF]"
+
+    local _, hum = GetCharacter()
+    if not SpeedEnabled and OriginalSpeed then
+        hum.WalkSpeed = OriginalSpeed
+    end
+end)
+
+--// Slider (isolated input)
+local SliderBack = Instance.new("Frame")
+SliderBack.Size = UDim2.new(0.9, 0, 0, 12)
+SliderBack.Position = UDim2.new(0.05, 0, 0, 215)
+SliderBack.BackgroundColor3 = Color3.fromRGB(30, 80, 55)
+SliderBack.Parent = Panel
+Instance.new("UICorner", SliderBack).CornerRadius = UDim.new(1, 0)
+
+local SliderFill = Instance.new("Frame")
+SliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+SliderFill.BackgroundColor3 = Color3.fromRGB(90, 255, 150)
+SliderFill.Parent = SliderBack
+Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(1, 0)
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0.9, 0, 0, 22)
+SpeedLabel.Position = UDim2.new(0.05, 0, 0, 235)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "Speed: 16"
+SpeedLabel.Font = Enum.Font.Gotham
+SpeedLabel.TextSize = 14
+SpeedLabel.TextColor3 = Color3.fromRGB(220, 255, 235)
+SpeedLabel.Parent = Panel
+
+local sliding = false
+
+SliderBack.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+        sliding = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+        sliding = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(i)
+    if sliding and i.UserInputType == Enum.UserInputType.MouseMovement then
+        local rel = math.clamp(
+            (i.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X,
+            0, 1
+        )
+        SpeedValue = math.floor(rel * 30)
+        SliderFill.Size = UDim2.new(rel, 0, 1, 0)
+        SpeedLabel.Text = "Speed: " .. SpeedValue
+    end
+end)
+
+--// Infinite Jump (SAFE)
+UserInputService.JumpRequest:Connect(function()
+    if not InfiniteJump then return end
+
+    local char, hum = GetCharacter()
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    -- Only allow mid-air boost
+    if hum.FloorMaterial ~= Enum.Material.Air then return end
+
+    -- Reset vertical velocity to avoid stacking physics
+    local vel = root.AssemblyLinearVelocity
+    root.AssemblyLinearVelocity = Vector3.new(vel.X, 0, vel.Z)
+
+    -- Apply controlled upward force (SAFE RANGE)
+    root.AssemblyLinearVelocity += Vector3.new(0, 38, 0)
+end)
+
+--// Runtime loop
+RunService.Heartbeat:Connect(function()
+    local _, hum = GetCharacter()
+
+    if not OriginalSpeed then
+        OriginalSpeed = hum.WalkSpeed
+    end
+
+    if SpeedEnabled then
+        hum.WalkSpeed = SpeedValue
+    end
+
+    workspace.Gravity = LowGravity and 120 or 196.2
+end)
