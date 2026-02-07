@@ -1,4 +1,4 @@
---// 222 Hub - Studio Test Panel (ULTIMATE FINAL v5)
+--// 222 Hub - Studio Test Panel (ULTIMATE FINAL v6)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -375,3 +375,76 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(RemoveESPBox)
+--// Combined Anti-Ragdoll + True Anti-Knockback (fully functional)
+local Player = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local AntiRagdollEnabled = false
+local AntiRagdollBtn = CreateButton("Anti-Ragdoll [OFF]", 300)
+
+AntiRagdollBtn.MouseButton1Click:Connect(function()
+    AntiRagdollEnabled = not AntiRagdollEnabled
+    AntiRagdollBtn.Text = AntiRagdollEnabled and "Anti-Ragdoll [ON]" or "Anti-Ragdoll [OFF]"
+end)
+
+local PlayerModule = require(Player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+local Controls = PlayerModule:GetControls()
+local BlockedStates = {
+    [Enum.HumanoidStateType.Ragdoll] = true,
+    [Enum.HumanoidStateType.FallingDown] = true,
+    [Enum.HumanoidStateType.Physics] = true,
+    [Enum.HumanoidStateType.Dead] = true
+}
+
+local function InitAntiRagdoll(character)
+    local hum = character:WaitForChild("Humanoid", 10)
+    local root = character:WaitForChild("HumanoidRootPart", 10)
+    if not hum or not root then return end
+
+    -- Disable blocked states
+    for state in pairs(BlockedStates) do
+        hum:SetStateEnabled(state, false)
+    end
+
+    -- Force humanoid to Running to prevent stun
+    RunService.Stepped:Connect(function()
+        if AntiRagdollEnabled and BlockedStates[hum:GetState()] then
+            hum:ChangeState(Enum.HumanoidStateType.Running)
+            hum.Health = hum.MaxHealth
+        end
+    end)
+
+    -- Override movement & prevent knockback
+    RunService.Heartbeat:Connect(function(deltaTime)
+        if not AntiRagdollEnabled then return end
+        if not root or not hum then return end
+
+        -- Get input direction
+        local moveDir = Vector3.new()
+        local cam = workspace.CurrentCamera
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector end
+
+        if moveDir.Magnitude > 0 then
+            moveDir = moveDir.Unit * hum.WalkSpeed
+        end
+
+        -- Preserve vertical velocity from gravity/jumps
+        local verticalVel = root.AssemblyLinearVelocity.Y
+
+        -- Apply movement + cancel all external forces
+        root.AssemblyLinearVelocity = Vector3.new(moveDir.X, verticalVel, moveDir.Z)
+        root.AssemblyAngularVelocity = Vector3.zero
+    end)
+end
+
+Player.CharacterAdded:Connect(function(char)
+    task.wait(0.4)
+    InitAntiRagdoll(char)
+end)
+if Player.Character then
+    InitAntiRagdoll(Player.Character)
+end
