@@ -121,14 +121,74 @@ JumpBtn.MouseButton1Click:Connect(function()
     JumpBtn.Text = InfiniteJump and "Infinite Jump [ON]" or "Infinite Jump [OFF]"
 end)
 
+--// Speed Boost Bypass
+local SpeedEnabled = false
+local SpeedValue = 16
+local SpeedConnection
+
+local function enableSpeedBypass()
+    if SpeedConnection then SpeedConnection:Disconnect() end
+
+    SpeedConnection = RunService.Stepped:Connect(function()
+        if not SpeedEnabled then return end
+
+        local char = LocalPlayer.Character
+        if not char then return end
+
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not root then return end
+
+        if hum:GetState() == Enum.HumanoidStateType.Running then
+            local moveDir = hum.MoveDirection
+            if moveDir.Magnitude > 0 then
+                root.Velocity = Vector3.new(
+                    moveDir.X * SpeedValue,
+                    root.Velocity.Y,
+                    moveDir.Z * SpeedValue
+                )
+            end
+        end
+    end)
+end
+
+local function disableSpeedBypass()
+    if SpeedConnection then
+        SpeedConnection:Disconnect()
+        SpeedConnection = nil
+    end
+end
+
+-- Connect to your existing button
 SpeedBtn.MouseButton1Click:Connect(function()
     SpeedEnabled = not SpeedEnabled
     SpeedBtn.Text = SpeedEnabled and "Speed Boost [ON]" or "Speed Boost [OFF]"
-    local _, hum = GetCharacter()
-    if not SpeedEnabled and OriginalSpeed then
-        hum.WalkSpeed = OriginalSpeed
+
+    if SpeedEnabled then
+        enableSpeedBypass()
+    else
+        disableSpeedBypass()
     end
 end)
+
+-- Slider connection (already exists)
+UserInputService.InputChanged:Connect(function(input)
+    if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local rel = math.clamp((input.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
+        SpeedValue = math.floor(rel * 30)
+        SliderFill.Size = UDim2.new(rel, 0, 1, 0)
+        SpeedLabel.Text = "Speed: "..SpeedValue
+    end
+end)
+
+-- Persist across respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if SpeedEnabled then
+        enableSpeedBypass()
+    end
+end)
+
 
 --// Anti-Ragdoll Button Logic
 local Player = game:GetService("Players").LocalPlayer
@@ -242,12 +302,6 @@ end)
 
 
 
---// Runtime Loop
-RunService.Heartbeat:Connect(function()
-    local _, hum = GetCharacter()
-    if not OriginalSpeed then OriginalSpeed = hum.WalkSpeed end
-    if SpeedEnabled then hum.WalkSpeed = SpeedValue end
-end)
 
 --// GUI Toggle System
 local GuiVisible = true
