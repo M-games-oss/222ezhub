@@ -1,4 +1,4 @@
---// 222 Hub - Studio Test Panel (ULTIMATE FINAL v6)
+--// 222 Hub - Studio Panel (ULTIMATE FINAL v7)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -89,7 +89,6 @@ do
 end
 
 --// States
-local LowGravity = false
 local InfiniteJump = false
 local SpeedEnabled = false
 local SpeedValue = 16
@@ -112,15 +111,10 @@ local function CreateButton(text, y)
 end
 
 --// Feature Buttons
-local LowGravBtn = CreateButton("Low Gravity [OFF]", 40)
-local JumpBtn = CreateButton("Infinite Jump [OFF]", 80)
-local SpeedBtn = CreateButton("Speed Boost [OFF]", 120)
-local ESPBtn = CreateButton("ESP [OFF]", 160)
+local JumpBtn = CreateButton("Infinite Jump [OFF]", 40)
+local SpeedBtn = CreateButton("Speed Boost [OFF]", 80)
+local ESPBtn = CreateButton("ESP [OFF]", 120)
 
-LowGravBtn.MouseButton1Click:Connect(function()
-    LowGravity = not LowGravity
-    LowGravBtn.Text = LowGravity and "Low Gravity [ON]" or "Low Gravity [OFF]"
-end)
 
 JumpBtn.MouseButton1Click:Connect(function()
     InfiniteJump = not InfiniteJump
@@ -134,6 +128,19 @@ SpeedBtn.MouseButton1Click:Connect(function()
     if not SpeedEnabled and OriginalSpeed then
         hum.WalkSpeed = OriginalSpeed
     end
+end)
+
+--// Anti-Ragdoll Button Logic
+local Player = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local AntiRagdollEnabled = false
+local AntiRagdollBtn = CreateButton("Anti-Ragdoll [OFF]", 300)
+
+AntiRagdollBtn.MouseButton1Click:Connect(function()
+    AntiRagdollEnabled = not AntiRagdollEnabled
+    AntiRagdollBtn.Text = AntiRagdollEnabled and "Anti-Ragdoll [ON]" or "Anti-Ragdoll [OFF]"
 end)
 
 --// Slider
@@ -177,22 +184,69 @@ UserInputService.InputChanged:Connect(function(i)
 end)
 
 --// Infinite Jump
-UserInputService.JumpRequest:Connect(function()
-    if not InfiniteJump then return end
-    local char, hum = GetCharacter()
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    if hum.FloorMaterial ~= Enum.Material.Air then return end
-    root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X,0,root.AssemblyLinearVelocity.Z)
-    root.AssemblyLinearVelocity += Vector3.new(0,38,0)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local infinityJumpEnabled = false
+
+-- Tunables
+local jumpForce = 55       -- higher jump
+local clampFallSpeed = 35   -- slower falling (lower = floatier)
+
+-- Soft fall control
+RunService.Heartbeat:Connect(function()
+	if not infinityJumpEnabled then return end
+
+	local char = player.Character
+	if not char then return end
+
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	local vel = hrp.AssemblyLinearVelocity
+	if vel.Y < -clampFallSpeed then
+		hrp.AssemblyLinearVelocity = Vector3.new(vel.X, -clampFallSpeed, vel.Z)
+	end
 end)
+
+-- Infinite Jump with floaty fall
+RunService.Heartbeat:Connect(function()
+    if not InfiniteJump then return end  -- use the button toggle variable
+
+    local char = player.Character
+    if not char then return end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local vel = hrp.AssemblyLinearVelocity
+    if vel.Y < -clampFallSpeed then
+        hrp.AssemblyLinearVelocity = Vector3.new(vel.X, -clampFallSpeed, vel.Z)
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if not InfiniteJump then return end  -- use the button toggle variable
+
+    local char = player.Character
+    if not char then return end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local vel = hrp.AssemblyLinearVelocity
+    hrp.AssemblyLinearVelocity = Vector3.new(vel.X, jumpForce, vel.Z)
+end)
+
+
 
 --// Runtime Loop
 RunService.Heartbeat:Connect(function()
     local _, hum = GetCharacter()
     if not OriginalSpeed then OriginalSpeed = hum.WalkSpeed end
     if SpeedEnabled then hum.WalkSpeed = SpeedValue end
-    workspace.Gravity = LowGravity and 120 or 196.2
 end)
 
 --// GUI Toggle System
@@ -248,16 +302,16 @@ local function ToggleGUI()
     TweenService:Create(Panel, HideTweenInfo, {Size = GuiVisible and UDim2.fromScale(0.22,0.38) or UDim2.new(0,0,0,0)}):Play()
 
     -- explicitly hide/show all main elements
-    LowGravBtn.Visible = GuiVisible
-    JumpBtn.Visible = GuiVisible
-    SpeedBtn.Visible = GuiVisible
-    ESPBtn.Visible = GuiVisible
-    SliderBack.Visible = GuiVisible
-    SpeedLabel.Visible = GuiVisible
-    KeybindLabel.Visible = GuiVisible
-    KeybindBox.Visible = GuiVisible
-    Title.Visible = GuiVisible
-    HideGuiBtn.Visible = GuiVisible
+JumpBtn.Visible = GuiVisible
+SpeedBtn.Visible = GuiVisible
+ESPBtn.Visible = GuiVisible
+SliderBack.Visible = GuiVisible
+SpeedLabel.Visible = GuiVisible
+KeybindLabel.Visible = GuiVisible
+KeybindBox.Visible = GuiVisible
+Title.Visible = GuiVisible
+HideGuiBtn.Visible = GuiVisible
+AntiRagdollBtn.Visible = GuiVisible
 end
 
 HideGuiBtn.MouseButton1Click:Connect(ToggleGUI)
@@ -376,18 +430,6 @@ end)
 
 Players.PlayerRemoving:Connect(RemoveESPBox)
 --// Combined Anti-Ragdoll + True Anti-Knockback (fully functional)
-local Player = game:GetService("Players").LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-
-local AntiRagdollEnabled = false
-local AntiRagdollBtn = CreateButton("Anti-Ragdoll [OFF]", 300)
-
-AntiRagdollBtn.MouseButton1Click:Connect(function()
-    AntiRagdollEnabled = not AntiRagdollEnabled
-    AntiRagdollBtn.Text = AntiRagdollEnabled and "Anti-Ragdoll [ON]" or "Anti-Ragdoll [OFF]"
-end)
-
 local PlayerModule = require(Player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
 local Controls = PlayerModule:GetControls()
 local BlockedStates = {
