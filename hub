@@ -417,28 +417,32 @@ local function InitAntiRagdoll(character)
 
     -- Override movement & prevent knockback
     RunService.Heartbeat:Connect(function(deltaTime)
-        if not AntiRagdollEnabled then return end
-        if not root or not hum then return end
+    if not AntiRagdollEnabled then return end
+    if not root or not hum then return end
 
-        -- Get input direction
-        local moveDir = Vector3.new()
-        local cam = workspace.CurrentCamera
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector end
+    local cam = workspace.CurrentCamera
+    local moveDir = Vector3.new()
 
-        if moveDir.Magnitude > 0 then
-            moveDir = moveDir.Unit * hum.WalkSpeed
-        end
+    -- Only horizontal movement
+    local lookVector = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z)
+    local rightVector = Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z)
 
-        -- Preserve vertical velocity from gravity/jumps
-        local verticalVel = root.AssemblyLinearVelocity.Y
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += lookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= lookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= rightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += rightVector end
 
-        -- Apply movement + cancel all external forces
-        root.AssemblyLinearVelocity = Vector3.new(moveDir.X, verticalVel, moveDir.Z)
-        root.AssemblyAngularVelocity = Vector3.zero
-    end)
+    if moveDir.Magnitude > 0 then
+        moveDir = moveDir.Unit * hum.WalkSpeed
+    end
+
+    -- Preserve vertical velocity
+    local verticalVel = root.AssemblyLinearVelocity.Y
+
+    -- Apply movement
+    root.AssemblyLinearVelocity = Vector3.new(moveDir.X, verticalVel, moveDir.Z)
+    root.AssemblyAngularVelocity = Vector3.zero
+end)
 end
 
 Player.CharacterAdded:Connect(function(char)
